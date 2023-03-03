@@ -12,9 +12,9 @@ import (
 	"io"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	// "google.golang.org/grpc/codes"
+	// "google.golang.org/grpc/status"
+	// "google.golang.org/genproto/googleapis/rpc/errdetails"
 	hellopb "mygrpc/pkg/grpc"
 )
 
@@ -25,15 +25,15 @@ type myServer struct {
 func (s *myServer) Hello(ctx context.Context, req *hellopb.HelloRequest) (*hellopb.HelloResponse, error) {
 	// リクエストからnameフィールドを取り出して
 	// "Hello, [名前]!"というレスポンスを返す
-	/*return &hellopb.HelloResponse{
+	return &hellopb.HelloResponse{
 		Message: fmt.Sprintf("Hello, %s!", req.GetName()),
-	}, nil*/
-	stat := status.New(codes.Unknown, "unknown error occurred")
+	}, nil
+	/*stat := status.New(codes.Unknown, "unknown error occurred")
 	stat, _ = stat.WithDetails(&errdetails.DebugInfo{
 		Detail: "koreha error nandayo.error no eraiza",
 	})
 	err := stat.Err()
-	return nil, err
+	return nil, err*/
 }
 
 func (s *myServer) HelloServerStream(req *hellopb.HelloRequest, stream hellopb.GreetingService_HelloServerStreamServer) error {
@@ -98,7 +98,16 @@ func main() {
 	}
 
 	// 2. gRPCサーバーを作成
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			myUnaryServerInterceptor1,
+			myUnaryServerInterceptor2,
+		),
+		grpc.ChainStreamInterceptor(
+			myStreamServerInterceptor1,
+			myStreamServerInterceptor2,
+		),
+	)
 
 	// 3. gRPCサーバーにGreetingServiceを登録
 	hellopb.RegisterGreetingServiceServer(s, NewMyServer())
